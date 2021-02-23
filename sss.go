@@ -21,21 +21,33 @@ type person struct {
 
 func verifyConfig(p person) person {
 
-	if p.age == noIntValue {
-		fmt.Print("\nPlease enter age of skier in years\n-> ")
+	if !validAge(p.age) {
+		if p.age == noIntValue {
+			fmt.Print("\nAge is skier not specified. Please enter age of skier in years\n-> ")
+		} else {
+			fmt.Print("\nInvald age specified. Please enter age of skier in years between 0 and 120\n-> ")
+		}
 		p.age = promptAge()
 		fmt.Printf("Skier is %d years old\n", p.age)
 	}
 
-	if p.length == noIntValue {
-		fmt.Print("\nLength hasn't been specified.\nPlease enter length of skier in cm:\n-> ")
+	if !validLength(p.length) {
+		if p.length == noIntValue {
+			fmt.Print("\nLength hasn't been specified.\nPlease enter length of skier in cm:\n-> ")
+		} else {
+			fmt.Print("\nInvalid length specified.\nPlease enter length of skier in cm:\n-> ")
+		}
 		p.length = promtLength()
 		fmt.Printf("%d cm Selected.\n", p.length)
 
 	}
 
-	if p.style == noStringValue && p.age > 8 {
-		fmt.Print("\nPlease enter your prefered style (f for freestyle. c for classic)\n-> ")
+	if !validStyle(p) {
+		if p.style == noStringValue {
+			fmt.Print("\nStyle hasn't been specified.\nPlease enter prefered style of skier\n-> ")
+		} else {
+			fmt.Print("\nInvalid style specified.\nPlease enter prefered style of skier (Classic or Freestyle)\n-> ")
+		}
 		p.style = promptStyle()
 		fmt.Println(p.style + " Selected")
 
@@ -43,9 +55,13 @@ func verifyConfig(p person) person {
 	return p
 }
 
+func validAge(i int) bool {
+	return 0 <= i && i <= 120
+}
+
 func promptAge() int {
 	i := parseIntFromStdin()
-	if i < 0 || 120 < i {
+	for !validAge(i) {
 		fmt.Print("Incorrect input. Please enter an age between 0 and 120\n-> ")
 		i = parseIntFromStdin()
 	}
@@ -53,10 +69,31 @@ func promptAge() int {
 	return i
 }
 
+func validStyle(p person) bool {
+	if p.age < 9 { // No styles for children
+		return true
+	}
+
+	style := p.style // Made this chunk because it wouldn't work as I intended any other way..
+	style = strings.TrimSpace(style)
+	style = strings.ToLower(style)
+
+	fmt.Println(style[:1])
+	if p.style == noStringValue {
+		return false
+	} else if strings.HasPrefix(style, "c") {
+		return true
+	} else if strings.HasPrefix(style, "f") {
+		return true
+	}
+
+	return true
+}
+
 func promptStyle() string {
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
-	for input[:1] != "c" && input[:1] != "f" {
+	for strings.ToLower(input[:1]) != "c" && strings.ToLower(input[:1]) != "f" {
 		fmt.Print("Incorrect input. \nPlease type freestyle or classic (f for freestyle or c for classic)\n-> ")
 		input, _ = reader.ReadString('\n')
 	}
@@ -67,13 +104,16 @@ func promptStyle() string {
 	return "Freestyle"
 }
 
+func validLength(i int) bool {
+	return 50 <= i && i <= 220
+}
+
 func promtLength() int {
 	i := parseIntFromStdin()
-	for i < 50 || 220 < i {
-		fmt.Print("Incorrect input. Please enter a length between 50 and 220 cm\n-> ")
+	for !validLength(i) {
+		fmt.Print("Incorrect input. Please enter a length between 50 and 220\n-> ")
 		i = parseIntFromStdin()
 	}
-
 	return i
 }
 
@@ -109,13 +149,13 @@ func readConfig() person {
 }
 
 func initPerson() *person {
-	return &person{"name_here", 0, "style", 0}
+	return &person{"name_here", noIntValue, noStringValue, noIntValue}
 }
 func selectSkiSize(p person) {
 	skiLength := 0
 	if p.age < 9 {
 		skiLength = childSki(p.age) + p.length
-		fmt.Printf("Suggested ski-size for a child is %d - %d cm\n", skiLength, skiLength+10)
+		fmt.Printf("Suggested ski-size for a child of length %d cm is %d - %d cm\n", p.length, skiLength, skiLength+10)
 	}
 	if p.style == "Classic" {
 		skiLength = classicSki(p.length)
@@ -123,7 +163,7 @@ func selectSkiSize(p person) {
 	}
 	if p.style == "Freestyle" {
 		skiLength = freestyleSki(p.length)
-		fmt.Printf("Suggested ski-size for a freestyle skier is %d - %d cm\n", skiLength, skiLength+5)
+		fmt.Printf("Suggested ski-size for a freestyle skier of length %d cm is %d - %d cm\n", p.length, p.length-10, skiLength+5)
 	}
 
 }
@@ -151,6 +191,7 @@ func freestyleSki(length int) int {
 func main() {
 	p := readConfig()
 	p = verifyConfig(p)
+	fmt.Println(p)
 	selectSkiSize(p)
 
 }
